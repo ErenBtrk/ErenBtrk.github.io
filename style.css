@@ -1,0 +1,144 @@
+*{
+    box-sizing: border-box;
+}
+
+body{
+    margin:0;
+    font-family: 'Teko', sans-serif;
+    
+}
+
+.body-header{
+    padding:8px 16px;
+    background-color: #C84B31;
+}
+
+
+.body-header-logo{
+    display: inline-block;
+    width: 19.25%;
+    text-decoration: none;
+    font-weight: bold;
+    font-size:30px;
+    color:#2D4263;
+    border:2px solid #2D4263;
+    border-radius: 5px;
+    background-color: #ECDBBA;
+    text-align: center;
+    vertical-align:middle;
+}
+
+.body-header-nav{
+    display: inline-block;
+    width:80.25%;
+    text-align: right;
+}
+
+.body-header-nav-items{
+   display: inline-block;
+}
+
+.body-header-nav-item{
+    display: inline-block;
+    background-color: #2D4263;
+    padding: 5px;
+    border:2px solid #ECDBBA;
+    border-radius: 5px;
+}
+
+.body-header-nav-item a{
+    text-decoration: none;
+    color:#ECDBBA;
+}
+
+#showcase{
+    background-image: url('images/moon.jpg');
+    background-position:center;
+    height: 500px;
+    width: 100%;
+    padding: 10px;
+}
+
+.showcase-heading{
+    color:#ECDBBA;
+    
+}
+
+.showcase-heading::after{
+    content: '\1F987';
+}
+
+#showcase2{
+    background-color:#C84B31 ;
+    text-align: center;
+    padding: 10px;
+}
+
+.showcase2-heading{
+    color:#2D4263;
+}
+
+
+.row{
+
+}
+
+.col3{
+    display: inline-block;
+    width: 30%;
+    vertical-align: top;
+}
+
+.col3-heading{
+    color:#2D4263;
+}
+
+.col3 i{
+    color:#ECDBBA;
+}
+
+.col2{
+    display: inline-block;
+    width: 49.5%;
+    text-align: center;
+    vertical-align: top;
+    height: 350px;
+    background-position: center;
+}
+
+.col2-left{
+    background-image: url('images/space1.jpg');
+    background-size: cover;
+    
+}
+
+.col2-right{
+    background-color:#ECDBBA ;
+    padding: 65px;
+}
+
+#content{
+    background-color:#ECDBBA ;
+    padding: 10px;
+}
+
+#content h2{
+    color: #2D4263;
+}
+
+#content a{
+    color:#2D4263;
+
+}
+
+.main-footer{
+    text-align: center;
+    background-color: #C84B31;
+    background-size: cover;
+    background-position: center;
+    padding: 30px;
+}
+
+.main-footer p::after{
+    content:'\00A9';
+}
