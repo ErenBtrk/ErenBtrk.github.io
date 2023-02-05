@@ -5,7 +5,7 @@
 body{
     margin:0;
     font-family: 'Teko', sans-serif;
-    
+    background-color:#C84B31;
 }
 
 .body-header{
@@ -15,8 +15,6 @@ body{
 
 
 .body-header-logo{
-    display: inline-block;
-    width: 19.25%;
     text-decoration: none;
     font-weight: bold;
     font-size:30px;
@@ -24,18 +22,20 @@ body{
     border:2px solid #2D4263;
     border-radius: 5px;
     background-color: #ECDBBA;
-    text-align: center;
-    vertical-align:middle;
+    
+
 }
 
 .body-header-nav{
-    display: inline-block;
-    width:80.25%;
+    display:inline-block;
+    width:calc(100% - 188px);
     text-align: right;
 }
 
 .body-header-nav-items{
-   display: inline-block;
+    margin:0;
+    padding: 0;
+    list-style: none;
 }
 
 .body-header-nav-item{
@@ -44,6 +44,7 @@ body{
     padding: 5px;
     border:2px solid #ECDBBA;
     border-radius: 5px;
+    
 }
 
 .body-header-nav-item a{
@@ -99,11 +100,12 @@ body{
 
 .col2{
     display: inline-block;
-    width: 49.5%;
+    width: 50%;
     text-align: center;
     vertical-align: top;
     height: 350px;
     background-position: center;
+    padding: 10px;
 }
 
 .col2-left{
@@ -124,6 +126,7 @@ body{
 
 #content h2{
     color: #2D4263;
+    text-align: center;
 }
 
 #content a{
