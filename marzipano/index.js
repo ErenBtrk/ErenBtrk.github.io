@@ -31,6 +31,7 @@
   var fullscreenToggleElement = document.querySelector('#fullscreenToggle');
   var mainpageToggleElement = document.querySelector('#mainpageToggle');
 
+
   // Detect desktop or mobile mode.
   if (window.matchMedia) {
     var setMode = function() {
@@ -108,8 +109,6 @@
     };
   });
 
-
-
   // Set up autorotate, if enabled.
   var autorotate = Marzipano.autorotate({
     yawSpeed: 0.03,
@@ -122,7 +121,6 @@
 
   // Set handler for autorotate toggle.
   autorotateToggleElement.addEventListener('click', toggleAutorotate);
-
 
   mainpageToggleElement.addEventListener('click', function() {
     if (confirm('Are you sure you want to navigate to main page?')) {
