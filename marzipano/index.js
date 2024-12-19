@@ -29,6 +29,7 @@
   var sceneListToggleElement = document.querySelector('#sceneListToggle');
   var autorotateToggleElement = document.querySelector('#autorotateToggle');
   var fullscreenToggleElement = document.querySelector('#fullscreenToggle');
+  var mainpageToggleElement = document.querySelector('#mainpageToggle');
 
   // Detect desktop or mobile mode.
   if (window.matchMedia) {
@@ -107,6 +108,8 @@
     };
   });
 
+
+
   // Set up autorotate, if enabled.
   var autorotate = Marzipano.autorotate({
     yawSpeed: 0.03,
@@ -119,6 +122,13 @@
 
   // Set handler for autorotate toggle.
   autorotateToggleElement.addEventListener('click', toggleAutorotate);
+
+
+  mainpageToggleElement.addEventListener('click', function() {
+    if (confirm('Are you sure you want to navigate to main page?')) {
+       window.location.href = '../index.html';
+    }
+ });
 
   // Set up fullscreen mode, if supported.
   if (screenfull.enabled && data.settings.fullscreenButton) {

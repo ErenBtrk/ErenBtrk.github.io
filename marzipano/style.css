@@ -58,7 +58,7 @@ a, a:hover, a:active, a:visited {
 
 /* If there is a fullscreen button the title bar must make space for it */
 body.fullscreen-enabled #titleBar {
-  right: 80px;
+  right: 40px;
 }
 
 body.fullscreen-enabled.mobile #titleBar {
@@ -95,11 +95,46 @@ body.multiple-scenes.mobile #titleBar {
   line-height: 40px;
 }
 
-#fullscreenToggle {
+#mainpageToggle {
   display: none;
   position: absolute;
   top: 0;
   right: 0;
+  width: 40px;
+  height: 40px;
+  padding: 5px;
+  background-color: rgb(103,115,131);
+  background-color: rgba(103,115,131,0.8);
+}
+
+.mobile #mainpageToggle {
+  width: 50px;
+  height: 50px;
+}
+
+body.fullscreen-enabled #mainpageToggle {
+  display: block;
+}
+
+#mainpageToggle .icon {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 30px;
+  height: 30px;
+}
+
+.mobile #mainpageToggle .icon {
+  top: 10px;
+  right: 10px;
+}
+
+
+#fullscreenToggle {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 40px;
   width: 40px;
   height: 40px;
   padding: 5px;
@@ -149,7 +184,7 @@ body.fullscreen-enabled #fullscreenToggle {
   display: block;
   position: absolute;
   top: 0;
-  right: 0;
+  left: 80px;
   width: 40px;
   height: 40px;
   padding: 5px;
@@ -199,6 +234,7 @@ body.fullscreen-enabled.mobile #autorotateToggle {
 #autorotateToggle.enabled .icon.off {
   display: none;
 }
+
 
 #sceneListToggle {
   position: absolute;
