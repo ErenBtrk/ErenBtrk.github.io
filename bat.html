@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konuşan Yarasa v2</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050505;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #overlay {
+            position: absolute;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        #start-container {
+            pointer-events: auto;
+            text-align: center;
+            background: rgba(0,0,0,0.5);
+            padding: 40px;
+            border-radius: 20px;
+        }
+
+        #start-btn {
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            background: #ffcc00;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            color: #000;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        #start-btn:hover { transform: scale(1.05); }
+
+        /* Konuşma Metni Alanı */
+        #text-wrapper {
+            position: absolute;
+            bottom: 10%;
+            width: 80%;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        #speech-text {
+            font-size: 2.5rem;
+            color: #fff;
+            text-shadow: 0 0 10px #ffcc00, 2px 2px 0 #000;
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 15px;
+            display: inline-block;
+            min-height: 60px;
+        }
+        
+        #status-log {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 0.8rem;
+            color: #aaa;
+            z-index: 20;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="status-log">Durum: Bekleniyor...</div>
+
+    <div id="overlay">
+        <div id="start-container">
+            <h1>Sesli Yarasa</h1>
+            <p>Konuştuğunuz kelimeler aşağıda belirecek.</p>
+            <button id="start-btn">BAŞLAT</button>
+        </div>
+
+        <div id="text-wrapper" class="hidden">
+            <div id="speech-text">...</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // --- Değişkenler ---
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('start-btn');
+        const startContainer = document.getElementById('start-container');
+        const textWrapper = document.getElementById('text-wrapper');
+        const speechText = document.getElementById('speech-text');
+        const statusLog = document.getElementById('status-log');
+
+        let width, height;
+        let audioContext, analyser, dataArray;
+        let isRunning = false;
+        let recognition;
+        
+        // Animasyon
+        let flapAngle = 0;
+        let smoothedVolume = 0;
+
+        // --- Boyutlandırma ---
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- Ana Başlatma Fonksiyonu ---
+        async function startApp() {
+            startContainer.classList.add('hidden');
+            textWrapper.classList.remove('hidden');
+            statusLog.innerText = "Durum: Mikrofon izni isteniyor...";
+
+            // 1. Web Speech API (Konuşma Tanıma) Başlat
+            initSpeechRecognition();
+
+            // 2. Web Audio API (Görselleştirme) Başlat
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext.state === 'suspended') await audioContext.resume();
+
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+                isRunning = true;
+                animate();
+            } catch (err) {
+                console.error(err);
+                statusLog.innerText = "Hata: Mikrofon izni verilmedi.";
+                alert("Lütfen mikrofon izni verin.");
+            }
+        }
+
+        // --- Konuşma Tanıma Ayarları ---
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+                speechText.innerText = "Tarayıcınız bu özelliği desteklemiyor.";
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'tr-TR';
+            recognition.continuous = true; // Sürekli dinlemeyi aktif et
+            recognition.interimResults = true; // Anlık sonuçları göster
+
+            recognition.onstart = () => {
+                statusLog.innerText = "Durum: Dinliyor (Konuşabilirsiniz)";
+                speechText.innerText = "...";
+            };
+
+            recognition.onresult = (event) => {
+                // Tüm sonuçları birleştirip son halini alıyoruz
+                let finalTranscript = '';
+                let interimTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                // Ekrana yazdırma
+                const textToShow = finalTranscript || interimTranscript;
+                if (textToShow.trim().length > 0) {
+                    speechText.innerText = textToShow;
+                }
+            };
+
+            recognition.onerror = (event) => {
+                statusLog.innerText = "Hata: " + event.error;
+                // 'no-speech' hatası sessizlikte olur, önemsemeyelim.
+                if (event.error !== 'no-speech') {
+                    console.error("Speech Error:", event.error);
+                }
+            };
+
+            recognition.onend = () => {
+                // Eğer kullanıcı durdurmadıysa, otomatik tekrar başlat
+                statusLog.innerText = "Durum: Bağlantı yenileniyor...";
+                if (isRunning) {
+                    setTimeout(() => {
+                        try {
+                            recognition.start();
+                        } catch(e) {
+                            console.log("Zaten çalışıyor olabilir.");
+                        }
+                    }, 500);
+                }
+            };
+
+            try {
+                recognition.start();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        // --- Yarasa Çizimi ---
+        function drawBat(x, y, scale, flapState, volumeIntensity) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+
+            const hue = 260 + (volumeIntensity * 50);
+            ctx.fillStyle = `hsl(${hue}, 60%, 10%)`;
+            ctx.strokeStyle = `hsl(${hue}, 80%, 50%)`;
+            ctx.lineWidth = 2;
+            const wingRotation = Math.sin(flapState) * 0.5; 
+
+            // Sağ Kanat
+            ctx.save();
+            ctx.rotate(wingRotation);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(60, -60, 120, -20); 
+            ctx.quadraticCurveTo(90, 10, 80, 40);
+            ctx.quadraticCurveTo(60, 10, 40, 40);
+            ctx.quadraticCurveTo(30, 10, 20, 30);
+            ctx.lineTo(0, 20);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+            // Damar
+            ctx.beginPath(); ctx.strokeStyle=`rgba(255,255,255,0.3)`; 
+            ctx.moveTo(0,0); ctx.lineTo(80,40); ctx.stroke();
+            ctx.restore();
+
+            // Sol Kanat
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.rotate(wingRotation);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(60, -60, 120, -20); 
+            ctx.quadraticCurveTo(90, 10, 80, 40);
+            ctx.quadraticCurveTo(60, 10, 40, 40);
+            ctx.quadraticCurveTo(30, 10, 20, 30);
+            ctx.lineTo(0, 20);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.strokeStyle=`rgba(255,255,255,0.3)`; 
+            ctx.moveTo(0,0); ctx.lineTo(80,40); ctx.stroke();
+            ctx.restore();
+
+            // Gövde
+            ctx.beginPath(); ctx.fillStyle = '#1a1a1a';
+            ctx.ellipse(0, 10, 15, 25, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+            // Kafa & Gözler
+            ctx.beginPath();
+            ctx.moveTo(-10, -10); ctx.lineTo(-15, -35); ctx.lineTo(-5, -15);
+            ctx.lineTo(5, -15); ctx.lineTo(15, -35); ctx.lineTo(10, -10);
+            ctx.fill(); ctx.stroke();
+
+            const eyeGlow = 2 + (volumeIntensity / 5);
+            ctx.fillStyle = `rgba(255, 255, 0, ${0.6 + volumeIntensity/255})`;
+            ctx.shadowBlur = 10 + volumeIntensity; ctx.shadowColor = 'yellow';
+            ctx.beginPath(); ctx.arc(-6, -5, eyeGlow, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(6, -5, eyeGlow, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.restore();
+        }
+
+        // --- Animasyon Döngüsü ---
+        function animate() {
+            if (!isRunning) return;
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, width, height);
+
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+            let avg = sum / dataArray.length;
+            smoothedVolume += (avg - smoothedVolume) * 0.1;
+
+            let flapSpeed = 0.1 + (smoothedVolume / 100);
+            flapAngle += flapSpeed;
+            let batScale = 1.5 + (smoothedVolume / 80);
+
+            drawBat(width / 2, height / 2 - 50, batScale, flapAngle, smoothedVolume);
+        }
+
+        startBtn.onclick = startApp;
+
+    </script>
+</body>
+</html>
