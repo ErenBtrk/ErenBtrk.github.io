@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funky Tab Visualizer (No Echo)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            overflow: hidden;
+            color: #0f0;
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        #canvas1 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            filter: contrast(1.2) brightness(1.1);
+        }
+
+        #ui-layer {
+            position: absolute;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            transition: opacity 0.5s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        h1 {
+            text-shadow: 2px 2px #ff00de, -2px -2px #00ffea;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        p {
+            color: #aaa;
+            font-size: 0.8rem;
+            max-width: 600px;
+            text-align: center;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: transparent;
+            color: #0f0;
+            border: 2px solid #0f0;
+            padding: 20px 40px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 0 10px #0f0;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: #0f0;
+            color: #000;
+            box-shadow: 0 0 30px #0f0, 0 0 60px #0f0;
+            transform: scale(1.05);
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #status {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 5;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h1>AUDIO REACTIVE<br>CORE</h1>
+        <p>
+            1. Butona tıkla.<br>
+            2. Müzik çalan <strong>Sekmeyi (Tab)</strong> seç.<br>
+            3. <strong>ÖNEMLİ:</strong> "Sesi paylaş" (Share Audio) kutucuğunu işaretle.
+        </p>
+        <button id="startBtn">Sistemi Başlat</button>
+    </div>
+
+    <div id="status">GİRİŞ BEKLENİYOR...</div>
+    <canvas id="canvas1"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas1');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const uiLayer = document.getElementById('ui-layer');
+        const statusDiv = document.getElementById('status');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let audioCtx;
+        let analyser;
+        let audioSource;
+        let dataArray;
+        let bufferLength;
+        let hue = 0;
+        let particles = [];
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+
+        class Particle {
+            constructor(x, y, speed, size, color) {
+                this.x = x;
+                this.y = y;
+                this.speedX = (Math.random() - 0.5) * speed;
+                this.speedY = (Math.random() - 0.5) * speed;
+                this.size = size;
+                this.color = color;
+                this.life = 100;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.size *= 0.95;
+                this.life--;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        startBtn.addEventListener('click', async () => {
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: { width: 1, height: 1 },
+                    audio: {
+                        echoCancellation: false,
+                        noiseSuppression: false,
+                        autoGainControl: false
+                    }
+                });
+
+                handleStream(stream);
+                uiLayer.classList.add('hidden');
+            } catch (err) {
+                console.error("Hata: " + err);
+                alert("Paylaşım başlatılamadı. Sesi paylaş kutusunu seçtiniz mi?");
+            }
+        });
+
+        function handleStream(stream) {
+            if (stream.getAudioTracks().length === 0) {
+                alert("SES BULUNAMADI. Lütfen sayfayı yenileyip 'Sesi Paylaş' kutucuğunu işaretleyin.");
+                return;
+            }
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioSource = audioCtx.createMediaStreamSource(stream);
+            analyser = audioCtx.createAnalyser();
+            
+            analyser.fftSize = 2048; 
+            
+            // YANKIYI ENGELLEYEN DEĞİŞİKLİK BURADA:
+            // Sadece analyser'a bağlıyoruz, audioCtx.destination'a (hoparlöre) bağlamıyoruz.
+            audioSource.connect(analyser);
+
+            bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+
+            statusDiv.innerText = "SİSTEM AKTİF // SES BAĞLANDI";
+            animate();
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            analyser.getByteFrequencyData(dataArray);
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            let sum = 0;
+            for(let i = 0; i < 100; i++) {
+                sum += dataArray[i];
+            }
+            let averageBass = sum / 100;
+            
+            hue += averageBass * 0.05;
+
+            if (averageBass > 210) {
+                const shake = (Math.random() - 0.5) * 20;
+                ctx.save();
+                ctx.translate(shake, shake);
+            }
+
+            ctx.beginPath();
+            let radiusBase = averageBass * 1.5; 
+            ctx.arc(centerX, centerY, radiusBase, 0, Math.PI * 2);
+            ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+            ctx.shadowBlur = 50;
+            ctx.shadowColor = `hsl(${hue}, 100%, 50%)`;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            const barsToDraw = 200; 
+            const angleStep = (Math.PI * 2) / barsToDraw;
+
+            for (let i = 0; i < barsToDraw; i++) {
+                const barHeight = dataArray[i] * 1.5;
+                const angle = (i * angleStep) + (Date.now() * 0.0005); 
+                
+                const xStart = centerX + Math.cos(angle) * (radiusBase * 0.8);
+                const yStart = centerY + Math.sin(angle) * (radiusBase * 0.8);
+                
+                const xEnd = centerX + Math.cos(angle) * (radiusBase + barHeight);
+                const yEnd = centerY + Math.sin(angle) * (radiusBase + barHeight);
+
+                const barHue = i * 2 + hue;
+
+                ctx.strokeStyle = `hsl(${barHue}, 100%, 50%)`;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(xStart, yStart);
+                ctx.lineTo(xEnd, yEnd);
+                ctx.stroke();
+
+                if (dataArray[i] > 240 && Math.random() < 0.1) {
+                    particles.push(new Particle(xEnd, yEnd, 5, Math.random() * 5 + 2, `hsl(${barHue}, 100%, 70%)`));
+                }
+            }
+
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].life <= 0 || particles[i].size <= 0.1) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+
+            if (averageBass > 210) {
+                ctx.restore();
+            }
+
+            requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>
