@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flying Audio Disco</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            color: white;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars when they fly to edges */
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* --- UI CONTROLS --- */
+        .controls {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(22, 33, 62, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
+            z-index: 1000;
+            border: 2px solid #e94560;
+            transition: opacity 0.5s;
+        }
+        .controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        button {
+            padding: 15px 30px;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+        button:hover { background: #ff2e63; }
+        .instructions { font-size: 0.9rem; color: #ccc; line-height: 1.5; }
+
+        /* --- CHARACTERS (Absolute Positioning) --- */
+        .character-container {
+            position: fixed; /* Allows them to fly anywhere */
+            width: 100px;
+            height: 100px;
+            will-change: transform, left, top; /* Performance optimization */
+        }
+
+        /* --- BEE DESIGN --- */
+        .bee-body {
+            width: 70px; height: 45px;
+            background: #FFD700;
+            border-radius: 35px;
+            position: absolute; top: 25px; left: 15px;
+            box-shadow: inset -5px -5px 0 rgba(0,0,0,0.1);
+            background-image: repeating-linear-gradient(90deg, #FFD700, #FFD700 15px, #222 15px, #222 30px);
+        }
+        .bee-wing {
+            width: 35px; height: 25px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 50%;
+            position: absolute; top: 10px;
+            animation: buzz 0.05s infinite alternate;
+        }
+        .bee-wing.L { left: 20px; transform: rotate(-20deg); transform-origin: bottom right; }
+        .bee-wing.R { left: 45px; transform: rotate(20deg); transform-origin: bottom left; }
+        .bee-eye {
+            width: 10px; height: 10px; background: #222; border-radius: 50%;
+            position: absolute; top: 35px; left: 70px;
+        }
+        @keyframes buzz { to { transform: scaleY(0.5) translateY(5px); } }
+
+        /* --- BAT DESIGN --- */
+        .bat-body {
+            width: 50px; height: 60px; background: #444; border-radius: 25px;
+            position: absolute; top: 20px; left: 25px;
+        }
+        .bat-wing {
+            width: 70px; height: 45px; background: #222;
+            position: absolute; top: 30px;
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+        }
+        .bat-wing.L { left: -30px; transform-origin: right top; animation: flap 0.3s infinite alternate; }
+        .bat-wing.R { right: -30px; transform-origin: left top; animation: flap 0.3s infinite alternate; }
+        .bat-ear {
+            width: 0; height: 0; 
+            border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 25px solid #444;
+            position: absolute; top: 0;
+        }
+        .bat-ear.L { left: 25px; transform: rotate(-20deg); }
+        .bat-ear.R { right: 25px; transform: rotate(20deg); }
+        .bat-eye {
+            width: 8px; height: 8px; background: white; border-radius: 50%;
+            position: absolute; top: 35px;
+        }
+        .bat-eye.L { left: 35px; } .bat-eye.R { left: 55px; }
+        @keyframes flap { from { transform: rotate(0deg); } to { transform: rotate(25deg); } }
+
+        /* --- DISCO LIGHTS --- */
+        .disco-ball {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px; height: 10px;
+            box-shadow: 0 0 100px 50px rgba(255, 255, 255, 0.1);
+            z-index: -1;
+            border-radius: 50%;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="controls" id="controls">
+        <h2>🎵 Flying Disco 🎵</h2>
+        <button onclick="connectToTab()">Start Party</button>
+        <div class="instructions">
+            1. Play music in another tab (YouTube/Spotify).<br>
+            2. Click button above.<br>
+            3. Select "Chrome Tab" -> Your Music Tab.<br>
+            4. <strong>Check "Also share tab audio".</strong>
+        </div>
+    </div>
+
+    <!-- The Disco Light Center -->
+    <div class="disco-ball" id="discoLight"></div>
+
+    <!-- BEE -->
+    <div class="character-container" id="bee">
+        <div class="bee-wing L"></div>
+        <div class="bee-wing R"></div>
+        <div class="bee-body"></div>
+        <div class="bee-eye"></div>
+    </div>
+
+    <!-- BAT -->
+    <div class="character-container" id="bat">
+        <div class="bat-ear L"></div>
+        <div class="bat-ear R"></div>
+        <div class="bat-wing L"></div>
+        <div class="bat-wing R"></div>
+        <div class="bat-body"></div>
+        <div class="bat-eye L"></div>
+        <div class="bat-eye R"></div>
+    </div>
+
+    <script>
+        // --- PHYSICS STATE ---
+        const beeState = { x: 100, y: 100, vx: 3, vy: 2 };
+        const batState = { x: window.innerWidth - 200, y: 300, vx: -3, vy: -2 };
+        
+        let audioContext;
+        let analyser;
+        let dataArray;
+        let isRunning = false;
+
+        async function connectToTab() {
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true, 
+                    audio: true
+                });
+
+                if (stream.getAudioTracks().length === 0) {
+                    alert("Audio not found. Please refresh and check 'Also share tab audio'.");
+                    return;
+                }
+
+                setupAudio(stream);
+                document.getElementById('controls').classList.add('hidden');
+                
+                stream.getVideoTracks()[0].onended = () => {
+                    document.getElementById('controls').classList.remove('hidden');
+                    alert("Party Stopped.");
+                    isRunning = false;
+                };
+
+            } catch (err) {
+                console.error("Error:", err);
+            }
+        }
+
+        function setupAudio(stream) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            const source = audioContext.createMediaStreamSource(stream);
+            source.connect(analyser);
+            source.connect(audioContext.destination); // Passthrough audio
+
+            analyser.fftSize = 64; // Low number for snappier reaction
+            const bufferLength = analyser.frequencyBinCount;
+            dataArray = new Uint8Array(bufferLength);
+
+            isRunning = true;
+            animate();
+        }
+
+        function animate() {
+            if (!isRunning) return;
+            requestAnimationFrame(animate);
+
+            // 1. Get Audio Data
+            analyser.getByteFrequencyData(dataArray);
+
+            // BASS (0-4)
+            let bass = 0;
+            for(let i=0; i<4; i++) bass += dataArray[i];
+            bass = bass / 4; // 0 to 255
+
+            // TREBLE (10-20)
+            let treble = 0;
+            for(let i=10; i<20; i++) treble += dataArray[i];
+            treble = treble / 10; // 0 to 255
+
+            // 2. Calculate Speed Multiplier (Louder = Faster)
+            const speedBoost = 1 + (bass / 150); // Speed ranges from 1x to ~2.5x
+
+            // --- MOVE BEE (Controlled by Physics + Bass) ---
+            updatePhysics(beeState, speedBoost);
+            const beeEl = document.getElementById('bee');
+            
+            // Bee Dance: Zoom in on bass
+            const beeScale = 1 + (bass / 300);
+            // Bee Flip: Face direction of travel
+            const beeFace = beeState.vx > 0 ? 1 : -1;
+
+            beeEl.style.left = beeState.x + 'px';
+            beeEl.style.top = beeState.y + 'px';
+            beeEl.style.transform = `scale(${beeScale}) scaleX(${beeFace})`;
+
+
+            // --- MOVE BAT (Controlled by Physics + Treble) ---
+            updatePhysics(batState, speedBoost * 0.8); // Bat is slightly slower
+            const batEl = document.getElementById('bat');
+
+            // Bat Dance: Rotate/Sway on treble
+            const batRot = (treble / 5) * Math.sin(Date.now() / 100);
+            const batScale = 1 + (treble / 400);
+
+            batEl.style.left = batState.x + 'px';
+            batEl.style.top = batState.y + 'px';
+            batEl.style.transform = `rotate(${batRot}deg) scale(${batScale})`;
+
+            // --- BACKGROUND DISCO LIGHT ---
+            const light = document.getElementById('discoLight');
+            const colorHue = (Date.now() / 20) % 360;
+            light.style.boxShadow = `0 0 ${100 + bass*2}px ${50 + bass}px hsl(${colorHue}, 70%, 50%)`;
+        }
+
+        function updatePhysics(obj, speed) {
+            // Apply velocity with speed boost
+            obj.x += obj.vx * speed;
+            obj.y += obj.vy * speed;
+
+            const padding = 100; // Keep them fully on screen
+
+            // Wall Bounce X
+            if (obj.x + padding > window.innerWidth) {
+                obj.x = window.innerWidth - padding;
+                obj.vx *= -1;
+            } else if (obj.x < 0) {
+                obj.x = 0;
+                obj.vx *= -1;
+            }
+
+            // Wall Bounce Y
+            if (obj.y + padding > window.innerHeight) {
+                obj.y = window.innerHeight - padding;
+                obj.vy *= -1;
+            } else if (obj.y < 0) {
+                obj.y = 0;
+                obj.vy *= -1;
+            }
+
+            // Randomly change direction slightly for organic flight
+            if (Math.random() < 0.02) {
+                obj.vx += (Math.random() - 0.5);
+                obj.vy += (Math.random() - 0.5);
+                
+                // Cap max natural speed so they don't go supersonic without music
+                const limit = 4;
+                if(obj.vx > limit) obj.vx = limit;
+                if(obj.vx < -limit) obj.vx = -limit;
+                if(obj.vy > limit) obj.vy = limit;
+                if(obj.vy < -limit) obj.vy = -limit;
+            }
+        }
+    </script>
+</body>
+</html>
