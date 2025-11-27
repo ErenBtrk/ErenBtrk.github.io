@@ -3,324 +3,422 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Konuşan Yarasa v2</title>
+    <title>Gökbörü, Arı ve Yarasa Diskosu</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            background-color: #050505;
-            overflow: hidden;
             font-family: 'Segoe UI', sans-serif;
-            color: #fff;
+            background: linear-gradient(to bottom, #0f2027, #203a43, #2c5364); /* Gece Gökyüzü */
+            color: white;
+            margin: 0;
+            overflow: hidden;
+            width: 100vw;
             height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
-        canvas {
+        /* --- UI KONTROLLER --- */
+        .controls {
             position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-
-        #overlay {
-            position: absolute;
-            z-index: 10;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none;
-        }
-
-        #start-container {
-            pointer-events: auto;
-            text-align: center;
-            background: rgba(0,0,0,0.5);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 32, 39, 0.95);
             padding: 40px;
             border-radius: 20px;
+            text-align: center;
+            border: 2px solid #00d2ff;
+            box-shadow: 0 0 60px rgba(0, 210, 255, 0.3);
+            z-index: 2000;
         }
-
-        #start-btn {
+        .controls.hidden { opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+        
+        button {
             padding: 15px 40px;
-            font-size: 1.5rem;
-            background: #ffcc00;
+            background: linear-gradient(90deg, #3a7bd5, #00d2ff);
+            color: white;
             border: none;
             border-radius: 50px;
-            cursor: pointer;
+            font-size: 1.2rem;
             font-weight: bold;
-            color: #000;
-            margin-top: 20px;
-            transition: transform 0.2s;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: 0.3s;
         }
+        button:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(58, 123, 213, 0.6); }
 
-        #start-btn:hover { transform: scale(1.05); }
+        .mute-control { position: absolute; top: 20px; right: 20px; z-index: 2000; }
+        .btn-small { padding: 8px 15px; background: rgba(0,0,0,0.5); border: 1px solid #777; color: #fff; border-radius: 5px; cursor: pointer;}
 
-        /* Konuşma Metni Alanı */
-        #text-wrapper {
-            position: absolute;
-            bottom: 10%;
-            width: 80%;
-            text-align: center;
+        /* --- EFEKTLER (Bira ve AUUUU) --- */
+        .float-text {
+            position: fixed;
+            font-weight: bold;
             pointer-events: none;
+            z-index: 5000;
+            text-shadow: 0 0 10px black;
+            animation: floatUp 2s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            50% { transform: translateY(-80px) scale(1.2); opacity: 1; }
+            100% { transform: translateY(-150px) scale(1); opacity: 0; }
         }
 
-        #speech-text {
-            font-size: 2.5rem;
-            color: #fff;
-            text-shadow: 0 0 10px #ffcc00, 2px 2px 0 #000;
-            font-weight: 600;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 20px;
-            border-radius: 15px;
-            display: inline-block;
-            min-height: 60px;
-        }
-        
-        #status-log {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 0.8rem;
-            color: #aaa;
-            z-index: 20;
+        /* --- DOLUNAY --- */
+        .moon {
+            position: fixed;
+            top: 50px; right: 50px;
+            width: 100px; height: 100px;
+            background: #fdfcdc;
+            border-radius: 50%;
+            box-shadow: 0 0 50px rgba(253, 252, 220, 0.5);
+            z-index: 0;
+            transition: transform 0.1s, box-shadow 0.1s;
         }
 
-        .hidden { display: none !important; }
+        /* --- KARAKTERLER (Ortak) --- */
+        .character-container {
+            position: fixed;
+            width: 120px; height: 120px;
+            will-change: transform, left, top;
+            transition: filter 0.2s;
+            z-index: 10;
+        }
+
+        /* --- ARI 🐝 --- */
+        .bee-body {
+            width: 70px; height: 45px; background: #FFD700; border-radius: 35px;
+            position: absolute; top: 35px; left: 25px;
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 12px, #000 12px, #000 24px);
+        }
+        .bee-wing {
+            width: 40px; height: 25px; background: rgba(255, 255, 255, 0.8); border-radius: 50%;
+            position: absolute; top: 10px;
+        }
+        .bee-wing.L { left: 25px; transform-origin: bottom right; }
+        .bee-wing.R { left: 55px; transform-origin: bottom left; }
+        .bee-eye {
+            width: 10px; height: 10px; background: #000; border-radius: 50%; position: absolute; top: 45px; left: 80px; border: 2px solid white;
+        }
+
+        /* --- YARASA 🦇 --- */
+        .bat-body {
+            width: 50px; height: 60px; background: #333; border-radius: 25px; position: absolute; top: 30px; left: 35px;
+        }
+        .bat-wing {
+            width: 80px; height: 50px; background: #111; position: absolute; top: 40px; clip-path: polygon(0 0, 100% 0, 50% 100%);
+        }
+        .bat-wing.L { left: -30px; transform-origin: right top; }
+        .bat-wing.R { right: -30px; transform-origin: left top; }
+        .bat-ear {
+            position: absolute; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 25px solid #333;
+        }
+        .bat-ear.L { left: 25px; transform: rotate(-20deg); top: 5px; }
+        .bat-ear.R { right: 25px; transform: rotate(20deg); top: 5px; }
+        .bat-eye {
+            width: 8px; height: 8px; background: #00f2ff; border-radius: 50%; position: absolute; top: 45px;
+        }
+        .bat-eye.L { left: 45px; } .bat-eye.R { left: 65px; }
+
+
+        /* --- BOZKURT 🐺 --- */
+        /* CSS ile basit bir kurt kafası/gövdesi çizimi */
+        .wolf-body {
+            width: 80px; height: 50px; background: #95a5a6; border-radius: 40px 50px 30px 40px;
+            position: absolute; top: 40px; left: 20px;
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.3);
+        }
+        .wolf-head {
+            width: 50px; height: 50px; background: #bdc3c7; border-radius: 50%;
+            position: absolute; top: 20px; left: 60px;
+            transform-origin: center bottom; /* Ulurken kafa yukarı kalksın diye */
+            transition: transform 0.1s;
+        }
+        .wolf-snout {
+            width: 30px; height: 25px; background: #bdc3c7; border-radius: 15px;
+            position: absolute; top: 25px; left: 30px; /* Kafanın içinde */
+        }
+        .wolf-nose {
+            width: 10px; height: 10px; background: #2c3e50; border-radius: 50%;
+            position: absolute; top: 5px; right: -2px;
+        }
+        .wolf-ear {
+            width: 0; height: 0; border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 20px solid #95a5a6;
+            position: absolute; top: -10px;
+        }
+        .wolf-ear.L { left: 5px; transform: rotate(-15deg); }
+        .wolf-ear.R { right: 5px; transform: rotate(15deg); }
+        .wolf-eye {
+            width: 8px; height: 8px; background: #f1c40f; border-radius: 50%;
+            position: absolute; top: 20px; left: 30px;
+            box-shadow: 0 0 5px #f1c40f;
+        }
+
+        /* --- EQUALIZER --- */
+        .spectrum-container {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 120px;
+            display: flex; align-items: flex-end; justify-content: space-around;
+            pointer-events: none; opacity: 0.5; z-index: 1;
+        }
+        .bar { width: 1.5%; background: #fff; min-height: 5px; border-radius: 5px 5px 0 0; }
+
     </style>
 </head>
 <body>
 
-    <div id="status-log">Durum: Bekleniyor...</div>
+    <div class="controls" id="controls">
+        <h2>🐺 Gökbörü & Disco 🐝</h2>
+        <p>Arı (Bass) | Yarasa (Tiz) | Bozkurt (Vokal/Mid)</p>
+        <button onclick="connectToTab()">BAŞLAT</button>
+        <br><small style="color:#ccc">"Chrome Sekmesi" -> "Sesi Paylaş" seçilmeli.</small>
+    </div>
 
-    <div id="overlay">
-        <div id="start-container">
-            <h1>Sesli Yarasa</h1>
-            <p>Konuştuğunuz kelimeler aşağıda belirecek.</p>
-            <button id="start-btn">BAŞLAT</button>
-        </div>
+    <div class="mute-control" id="muteDiv" style="display:none;">
+        <button class="btn-small" id="muteBtn" onclick="toggleMute()">Sesi Kapat (Yankı Varsa)</button>
+    </div>
 
-        <div id="text-wrapper" class="hidden">
-            <div id="speech-text">...</div>
+    <div class="moon" id="moon"></div>
+    <div class="spectrum-container" id="spectrum"></div>
+
+    <!-- ARI -->
+    <div class="character-container" id="bee">
+        <div class="bee-wing L" id="bwL"></div>
+        <div class="bee-wing R" id="bwR"></div>
+        <div class="bee-body"></div>
+        <div class="bee-eye"></div>
+    </div>
+
+    <!-- YARASA -->
+    <div class="character-container" id="bat">
+        <div class="bat-ear L"></div>
+        <div class="bat-ear R"></div>
+        <div class="bat-wing L" id="btwL"></div>
+        <div class="bat-wing R" id="btwR"></div>
+        <div class="bat-body"></div>
+        <div class="bat-eye L"></div>
+        <div class="bat-eye R"></div>
+    </div>
+
+    <!-- BOZKURT -->
+    <div class="character-container" id="wolf">
+        <div class="wolf-body"></div>
+        <div class="wolf-head" id="wolfHead">
+            <div class="wolf-ear L"></div>
+            <div class="wolf-ear R"></div>
+            <div class="wolf-eye"></div>
+            <div class="wolf-snout">
+                <div class="wolf-nose"></div>
+            </div>
         </div>
     </div>
 
-    <canvas id="canvas"></canvas>
-
     <script>
-        // --- Değişkenler ---
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        const startBtn = document.getElementById('start-btn');
-        const startContainer = document.getElementById('start-container');
-        const textWrapper = document.getElementById('text-wrapper');
-        const speechText = document.getElementById('speech-text');
-        const statusLog = document.getElementById('status-log');
-
-        let width, height;
-        let audioContext, analyser, dataArray;
-        let isRunning = false;
-        let recognition;
+        // --- HAREKET DURUMLARI ---
+        const beeState = { x: 100, y: 100, vx: 2, vy: 1.5, el: document.getElementById('bee') };
+        const batState = { x: window.innerWidth - 200, y: 300, vx: -2, vy: -1.5, el: document.getElementById('bat') };
+        // Kurt biraz daha yavaş ve ağır
+        const wolfState = { x: window.innerWidth / 2, y: window.innerHeight - 200, vx: 1.5, vy: -1, el: document.getElementById('wolf') };
         
-        // Animasyon
-        let flapAngle = 0;
-        let smoothedVolume = 0;
+        let audioContext, analyser, dataArray, gainNode;
+        let isRunning = false, isMuted = false;
+        
+        // Çarpışma Kontrolü (Debounce süresi)
+        let lastCollisionTime = 0;
+        const COLLISION_COOLDOWN = 1200; 
 
-        // --- Boyutlandırma ---
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
+        // Equalizer Çubukları
+        const BAR_COUNT = 40;
+        const spec = document.getElementById('spectrum');
+        for(let i=0; i<BAR_COUNT; i++) {
+            let b = document.createElement('div');
+            b.className = 'bar'; b.id='bar'+i;
+            spec.appendChild(b);
         }
-        window.addEventListener('resize', resize);
-        resize();
 
-        // --- Ana Başlatma Fonksiyonu ---
-        async function startApp() {
-            startContainer.classList.add('hidden');
-            textWrapper.classList.remove('hidden');
-            statusLog.innerText = "Durum: Mikrofon izni isteniyor...";
-
-            // 1. Web Speech API (Konuşma Tanıma) Başlat
-            initSpeechRecognition();
-
-            // 2. Web Audio API (Görselleştirme) Başlat
+        async function connectToTab() {
             try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                if (audioContext.state === 'suspended') await audioContext.resume();
-
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                const source = audioContext.createMediaStreamSource(stream);
-                source.connect(analyser);
-                dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-                isRunning = true;
-                animate();
-            } catch (err) {
-                console.error(err);
-                statusLog.innerText = "Hata: Mikrofon izni verilmedi.";
-                alert("Lütfen mikrofon izni verin.");
-            }
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                if (stream.getAudioTracks().length === 0) {
+                    alert("Lütfen 'Sesi Paylaş' kutusunu işaretleyin!"); return;
+                }
+                setupAudio(stream);
+                document.getElementById('controls').classList.add('hidden');
+                document.getElementById('muteDiv').style.display = 'block';
+                stream.getVideoTracks()[0].onended = () => location.reload();
+            } catch (err) { console.error(err); }
         }
 
-        // --- Konuşma Tanıma Ayarları ---
-        function initSpeechRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        function setupAudio(stream) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.smoothingTimeConstant = 0.85; // Yumuşak geçişler
+            analyser.fftSize = 256; 
 
-            if (!SpeechRecognition) {
-                speechText.innerText = "Tarayıcınız bu özelliği desteklemiyor.";
-                return;
-            }
+            gainNode = audioContext.createGain();
+            const source = audioContext.createMediaStreamSource(stream);
+            
+            source.connect(analyser);
+            analyser.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            gainNode.gain.value = 1;
 
-            recognition = new SpeechRecognition();
-            recognition.lang = 'tr-TR';
-            recognition.continuous = true; // Sürekli dinlemeyi aktif et
-            recognition.interimResults = true; // Anlık sonuçları göster
-
-            recognition.onstart = () => {
-                statusLog.innerText = "Durum: Dinliyor (Konuşabilirsiniz)";
-                speechText.innerText = "...";
-            };
-
-            recognition.onresult = (event) => {
-                // Tüm sonuçları birleştirip son halini alıyoruz
-                let finalTranscript = '';
-                let interimTranscript = '';
-
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript;
-                    } else {
-                        interimTranscript += event.results[i][0].transcript;
-                    }
-                }
-
-                // Ekrana yazdırma
-                const textToShow = finalTranscript || interimTranscript;
-                if (textToShow.trim().length > 0) {
-                    speechText.innerText = textToShow;
-                }
-            };
-
-            recognition.onerror = (event) => {
-                statusLog.innerText = "Hata: " + event.error;
-                // 'no-speech' hatası sessizlikte olur, önemsemeyelim.
-                if (event.error !== 'no-speech') {
-                    console.error("Speech Error:", event.error);
-                }
-            };
-
-            recognition.onend = () => {
-                // Eğer kullanıcı durdurmadıysa, otomatik tekrar başlat
-                statusLog.innerText = "Durum: Bağlantı yenileniyor...";
-                if (isRunning) {
-                    setTimeout(() => {
-                        try {
-                            recognition.start();
-                        } catch(e) {
-                            console.log("Zaten çalışıyor olabilir.");
-                        }
-                    }, 500);
-                }
-            };
-
-            try {
-                recognition.start();
-            } catch (e) {
-                console.error(e);
-            }
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+            isRunning = true;
+            animate();
         }
 
-        // --- Yarasa Çizimi ---
-        function drawBat(x, y, scale, flapState, volumeIntensity) {
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.scale(scale, scale);
-
-            const hue = 260 + (volumeIntensity * 50);
-            ctx.fillStyle = `hsl(${hue}, 60%, 10%)`;
-            ctx.strokeStyle = `hsl(${hue}, 80%, 50%)`;
-            ctx.lineWidth = 2;
-            const wingRotation = Math.sin(flapState) * 0.5; 
-
-            // Sağ Kanat
-            ctx.save();
-            ctx.rotate(wingRotation);
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.quadraticCurveTo(60, -60, 120, -20); 
-            ctx.quadraticCurveTo(90, 10, 80, 40);
-            ctx.quadraticCurveTo(60, 10, 40, 40);
-            ctx.quadraticCurveTo(30, 10, 20, 30);
-            ctx.lineTo(0, 20);
-            ctx.closePath(); ctx.fill(); ctx.stroke();
-            // Damar
-            ctx.beginPath(); ctx.strokeStyle=`rgba(255,255,255,0.3)`; 
-            ctx.moveTo(0,0); ctx.lineTo(80,40); ctx.stroke();
-            ctx.restore();
-
-            // Sol Kanat
-            ctx.save();
-            ctx.scale(-1, 1);
-            ctx.rotate(wingRotation);
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.quadraticCurveTo(60, -60, 120, -20); 
-            ctx.quadraticCurveTo(90, 10, 80, 40);
-            ctx.quadraticCurveTo(60, 10, 40, 40);
-            ctx.quadraticCurveTo(30, 10, 20, 30);
-            ctx.lineTo(0, 20);
-            ctx.closePath(); ctx.fill(); ctx.stroke();
-            ctx.beginPath(); ctx.strokeStyle=`rgba(255,255,255,0.3)`; 
-            ctx.moveTo(0,0); ctx.lineTo(80,40); ctx.stroke();
-            ctx.restore();
-
-            // Gövde
-            ctx.beginPath(); ctx.fillStyle = '#1a1a1a';
-            ctx.ellipse(0, 10, 15, 25, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-
-            // Kafa & Gözler
-            ctx.beginPath();
-            ctx.moveTo(-10, -10); ctx.lineTo(-15, -35); ctx.lineTo(-5, -15);
-            ctx.lineTo(5, -15); ctx.lineTo(15, -35); ctx.lineTo(10, -10);
-            ctx.fill(); ctx.stroke();
-
-            const eyeGlow = 2 + (volumeIntensity / 5);
-            ctx.fillStyle = `rgba(255, 255, 0, ${0.6 + volumeIntensity/255})`;
-            ctx.shadowBlur = 10 + volumeIntensity; ctx.shadowColor = 'yellow';
-            ctx.beginPath(); ctx.arc(-6, -5, eyeGlow, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(6, -5, eyeGlow, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0;
-
-            ctx.restore();
+        function toggleMute() {
+            if(!gainNode) return;
+            if(isMuted) { gainNode.gain.value = 1; isMuted = false; document.getElementById('muteBtn').innerText = "🔊 Sesi Kapat (Yankı Varsa)"; }
+            else { gainNode.gain.value = 0; isMuted = true; document.getElementById('muteBtn').innerText = "🔇 Sesi Aç"; }
         }
 
-        // --- Animasyon Döngüsü ---
+        // --- METİN OLUŞTURMA FONKSİYONU ---
+        function spawnText(x, y, text, fontSize, color) {
+            const el = document.createElement('div');
+            el.innerHTML = text;
+            el.className = "float-text";
+            el.style.left = x + "px";
+            el.style.top = y + "px";
+            el.style.fontSize = fontSize;
+            el.style.color = color;
+            document.body.appendChild(el);
+            setTimeout(() => { el.remove(); }, 2000);
+        }
+
         function animate() {
             if (!isRunning) return;
             requestAnimationFrame(animate);
-            ctx.clearRect(0, 0, width, height);
 
             analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-            let avg = sum / dataArray.length;
-            smoothedVolume += (avg - smoothedVolume) * 0.1;
 
-            let flapSpeed = 0.1 + (smoothedVolume / 100);
-            flapAngle += flapSpeed;
-            let batScale = 1.5 + (smoothedVolume / 80);
+            // --- SES ANALİZİ ---
+            // Bass (0-5)
+            let bass = 0; for(let i=0; i<5; i++) bass += dataArray[i]; bass /= 5;
+            
+            // Mids (6-15) - Kurt için (Vokaller/Gitar)
+            let mids = 0; for(let i=6; i<15; i++) mids += dataArray[i]; mids /= 9;
 
-            drawBat(width / 2, height / 2 - 50, batScale, flapAngle, smoothedVolume);
+            // Treble (20-50)
+            let treble = 0; for(let i=20; i<50; i++) treble += dataArray[i]; treble /= 30;
+
+            const now = Date.now();
+
+            // --- 1. ÇARPIŞMALAR ---
+            checkCollisions(now);
+
+            // --- 2. GÖRSEL TEPKİLER ---
+
+            // Dolunay (Genel sese tepki verir)
+            const moonGlow = 20 + (bass + mids)/4;
+            document.getElementById('moon').style.boxShadow = `0 0 ${moonGlow}px rgba(253, 252, 220, 0.6)`;
+            document.getElementById('moon').style.transform = `scale(${1 + bass/800})`;
+
+            // Arı (Bass)
+            const beeScale = 1 + (bass / 400); 
+            beeState.el.style.transform = `scale(${beeScale}) scaleX(${beeState.vx > 0 ? 1 : -1})`;
+            // Arı Hızlanma
+            const bwSpeed = 20 + bass/5;
+            document.getElementById('bwL').style.transform = `rotate(${Math.sin(now/bwSpeed)*30}deg)`;
+            document.getElementById('bwR').style.transform = `rotate(${Math.sin(now/bwSpeed)*-30}deg)`;
+
+            // Yarasa (Treble)
+            const batScale = 1 + (treble / 400);
+            batState.el.style.transform = `scale(${batScale}) rotate(${Math.sin(now/200) * 10}deg)`;
+            const btwSpeed = 30 - treble/10;
+            const bflap = Math.sin(now/btwSpeed) * 30;
+            document.getElementById('btwL').style.transform = `rotate(${10 + bflap}deg)`;
+            document.getElementById('btwR').style.transform = `rotate(${-10 - bflap}deg)`;
+
+            // BOZKURT (Mids - Uluma Hareketi)
+            const wolfScale = 1 + (mids / 400);
+            const wolfDir = wolfState.vx > 0 ? 1 : -1;
+            // Müzik yükselince (mid > 100) kafa yukarı kalksın (uluma)
+            const headTilt = mids > 120 ? -45 : 0; 
+            
+            document.getElementById('wolfHead').style.transform = `rotate(${headTilt}deg)`;
+            wolfState.el.style.transform = `scale(${wolfScale}) scaleX(${wolfDir})`;
+            
+            // Göz Parlaması (Mid vurduğunda)
+            const eyeColor = mids > 150 ? '#00d2ff' : '#f1c40f'; // Maviye döner
+            document.querySelector('.wolf-eye').style.background = eyeColor;
+            document.querySelector('.wolf-eye').style.boxShadow = `0 0 ${mids/10}px ${eyeColor}`;
+
+            // Equalizer
+            for(let i=0; i<BAR_COUNT; i++) {
+                const h = dataArray[i] / 2;
+                const bar = document.getElementById('bar'+i);
+                bar.style.height = h + 'px';
+                // Renk geçişi (Mavi tonları)
+                bar.style.background = `hsl(${180 + (h)}, 70%, 50%)`;
+            }
+
+            // --- 3. FİZİK ---
+            updatePhysics(beeState);
+            updatePhysics(batState);
+            updatePhysics(wolfState);
         }
 
-        startBtn.onclick = startApp;
+        function checkCollisions(now) {
+            if (now - lastCollisionTime < COLLISION_COOLDOWN) return;
 
+            // Merkez noktaları
+            const bX = beeState.x + 60, bY = beeState.y + 60;
+            const batX = batState.x + 60, batY = batState.y + 60;
+            const wX = wolfState.x + 60, wY = wolfState.y + 60;
+
+            const distBeeBat = Math.hypot(bX - batX, bY - batY);
+            const distWolfBee = Math.hypot(wX - bX, wY - bY);
+            const distWolfBat = Math.hypot(wX - batX, wY - batY);
+            const limit = 90;
+
+            let hit = false;
+
+            // Arı + Yarasa = Bira
+            if (distBeeBat < limit) {
+                spawnText((bX+batX)/2, (bY+batY)/2, "🍺", "50px", "white");
+                beeState.vx *= -1; batState.vx *= -1;
+                hit = true;
+            }
+            // Kurt + Arı = AUUUU
+            else if (distWolfBee < limit) {
+                spawnText((wX+bX)/2, (wY+bY)/2, "AUUUU 🐺", "40px", "#00d2ff");
+                wolfState.vx *= -1; beeState.vx *= -1;
+                hit = true;
+            }
+            // Kurt + Yarasa = AUUUU
+            else if (distWolfBat < limit) {
+                spawnText((wX+batX)/2, (wY+batY)/2, "AUUUU 🐺", "40px", "#00d2ff");
+                wolfState.vx *= -1; batState.vx *= -1;
+                hit = true;
+            }
+
+            if(hit) lastCollisionTime = now;
+        }
+
+        function updatePhysics(obj) {
+            obj.x += obj.vx;
+            obj.y += obj.vy;
+            const pad = 120;
+            
+            // X Ekseni (Duvarlar)
+            if (obj.x + pad > window.innerWidth) { obj.x = window.innerWidth - pad; obj.vx *= -1; }
+            else if (obj.x < 0) { obj.x = 0; obj.vx *= -1; }
+
+            // Y Ekseni (Duvarlar - Alttaki equalizer'a çarpmasın)
+            if (obj.y + pad > window.innerHeight - 100) { obj.y = window.innerHeight - pad - 100; obj.vy *= -1; }
+            else if (obj.y < 0) { obj.y = 0; obj.vy *= -1; }
+
+            // Rastgele hafif süzülme değişikliği
+            if (Math.random() < 0.01) {
+                obj.vx += (Math.random() - 0.5);
+                obj.vy += (Math.random() - 0.5);
+                // Hız sınırı
+                obj.vx = Math.max(-2.5, Math.min(2.5, obj.vx));
+                obj.vy = Math.max(-2.5, Math.min(2.5, obj.vy));
+            }
+            
+            obj.el.style.left = obj.x + 'px';
+            obj.el.style.top = obj.y + 'px';
+        }
     </script>
 </body>
 </html>
