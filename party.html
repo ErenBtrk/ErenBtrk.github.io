@@ -1,119 +1,145 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flying Audio Disco</title>
+    <title>Ultimate Neon Disco</title>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
-            background: #1a1a2e;
+            background: #050505;
             color: white;
             margin: 0;
-            overflow: hidden; /* Prevent scrollbars when they fly to edges */
+            overflow: hidden;
             width: 100vw;
             height: 100vh;
         }
 
-        /* --- UI CONTROLS --- */
+        /* --- KONTROLLER --- */
         .controls {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            background: rgba(22, 33, 62, 0.95);
-            padding: 30px;
+            background: rgba(10, 10, 20, 0.9);
+            padding: 40px;
             border-radius: 20px;
             text-align: center;
-            box-shadow: 0 0 30px rgba(233, 69, 96, 0.5);
-            z-index: 1000;
-            border: 2px solid #e94560;
-            transition: opacity 0.5s;
+            border: 1px solid #00f2ff;
+            box-shadow: 0 0 50px rgba(0, 242, 255, 0.2);
+            z-index: 2000;
+            backdrop-filter: blur(15px);
         }
-        .controls.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
+        .controls.hidden { opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+        
         button {
-            padding: 15px 30px;
-            background: #e94560;
+            padding: 15px 40px;
+            background: linear-gradient(90deg, #ff0055, #00f2ff);
             color: white;
             border: none;
             border-radius: 50px;
             font-size: 1.2rem;
             font-weight: bold;
             cursor: pointer;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            transition: 0.3s;
         }
-        button:hover { background: #ff2e63; }
-        .instructions { font-size: 0.9rem; color: #ccc; line-height: 1.5; }
+        button:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255, 0, 85, 0.5); }
 
-        /* --- CHARACTERS (Absolute Positioning) --- */
+        .mute-control { position: absolute; top: 20px; right: 20px; z-index: 2000; }
+        .btn-small { padding: 8px 15px; font-size: 0.85rem; background: #222; border: 1px solid #555; color: #fff; border-radius: 5px; cursor: pointer;}
+        .btn-small.active { background: #ff0055; border-color: #ff0055; }
+
+        /* --- KARAKTERLER --- */
         .character-container {
-            position: fixed; /* Allows them to fly anywhere */
-            width: 100px;
-            height: 100px;
-            will-change: transform, left, top; /* Performance optimization */
+            position: fixed;
+            width: 120px; height: 120px;
+            will-change: transform, left, top;
+            /* Glow efekti JS ile güncellenecek */
+            transition: filter 0.1s; 
         }
 
-        /* --- BEE DESIGN --- */
+        /* --- ARI --- */
         .bee-body {
-            width: 70px; height: 45px;
+            width: 80px; height: 50px;
             background: #FFD700;
-            border-radius: 35px;
-            position: absolute; top: 25px; left: 15px;
-            box-shadow: inset -5px -5px 0 rgba(0,0,0,0.1);
-            background-image: repeating-linear-gradient(90deg, #FFD700, #FFD700 15px, #222 15px, #222 30px);
+            border-radius: 40px;
+            position: absolute; top: 30px; left: 20px;
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 15px, #000 15px, #000 30px);
+            box-shadow: inset -5px -5px 10px rgba(0,0,0,0.5);
+            z-index: 2;
         }
         .bee-wing {
-            width: 35px; height: 25px;
-            background: rgba(255,255,255,0.9);
+            width: 45px; height: 30px;
+            background: rgba(255, 255, 255, 0.8);
             border-radius: 50%;
-            position: absolute; top: 10px;
-            animation: buzz 0.05s infinite alternate;
+            position: absolute; top: 5px;
+            z-index: 1;
         }
-        .bee-wing.L { left: 20px; transform: rotate(-20deg); transform-origin: bottom right; }
-        .bee-wing.R { left: 45px; transform: rotate(20deg); transform-origin: bottom left; }
+        .bee-wing.L { left: 20px; transform-origin: bottom right; }
+        .bee-wing.R { left: 55px; transform-origin: bottom left; }
         .bee-eye {
-            width: 10px; height: 10px; background: #222; border-radius: 50%;
-            position: absolute; top: 35px; left: 70px;
+            width: 14px; height: 14px; background: #000; border-radius: 50%;
+            position: absolute; top: 38px; left: 85px; border: 3px solid white; z-index: 3;
+            transition: width 0.05s, height 0.05s; /* Göz bebeği efekti */
         }
-        @keyframes buzz { to { transform: scaleY(0.5) translateY(5px); } }
 
-        /* --- BAT DESIGN --- */
+        /* --- YARASA --- */
         .bat-body {
-            width: 50px; height: 60px; background: #444; border-radius: 25px;
-            position: absolute; top: 20px; left: 25px;
+            width: 55px; height: 65px; background: #444; border-radius: 30px;
+            position: absolute; top: 25px; left: 30px; z-index: 2;
         }
         .bat-wing {
-            width: 70px; height: 45px; background: #222;
-            position: absolute; top: 30px;
-            clip-path: polygon(0 0, 100% 0, 50% 100%);
-        }
-        .bat-wing.L { left: -30px; transform-origin: right top; animation: flap 0.3s infinite alternate; }
-        .bat-wing.R { right: -30px; transform-origin: left top; animation: flap 0.3s infinite alternate; }
-        .bat-ear {
-            width: 0; height: 0; 
-            border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 25px solid #444;
-            position: absolute; top: 0;
-        }
-        .bat-ear.L { left: 25px; transform: rotate(-20deg); }
-        .bat-ear.R { right: 25px; transform: rotate(20deg); }
-        .bat-eye {
-            width: 8px; height: 8px; background: white; border-radius: 50%;
+            width: 90px; height: 55px; background: #222;
             position: absolute; top: 35px;
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
+            z-index: 1;
         }
-        .bat-eye.L { left: 35px; } .bat-eye.R { left: 55px; }
-        @keyframes flap { from { transform: rotate(0deg); } to { transform: rotate(25deg); } }
+        .bat-wing.L { left: -40px; transform-origin: right top; }
+        .bat-wing.R { right: -40px; transform-origin: left top; }
+        .bat-ear {
+            position: absolute; top: 0px; width: 0; height: 0;
+            border-left: 10px solid transparent; border-right: 10px solid transparent; border-bottom: 30px solid #444;
+        }
+        .bat-ear.L { left: 20px; transform: rotate(-20deg); }
+        .bat-ear.R { right: 20px; transform: rotate(20deg); }
+        .bat-eye {
+            width: 10px; height: 10px; background: #00f2ff; border-radius: 50%;
+            position: absolute; top: 40px; box-shadow: 0 0 10px #00f2ff; z-index: 3;
+        }
+        .bat-eye.L { left: 40px; } .bat-eye.R { left: 65px; }
 
-        /* --- DISCO LIGHTS --- */
-        .disco-ball {
+        /* --- EQUALIZER (SPEKTRUM) --- */
+        .spectrum-container {
             position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 10px; height: 10px;
-            box-shadow: 0 0 100px 50px rgba(255, 255, 255, 0.1);
-            z-index: -1;
-            border-radius: 50%;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.8;
+            padding: 0 20px;
+            box-sizing: border-box;
+        }
+        .bar {
+            width: 2%; /* Genişlik */
+            background: linear-gradient(to top, #00f2ff, #ff0055);
+            border-radius: 10px 10px 0 0;
+            min-height: 5px;
+            transition: height 0.05s ease;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.5);
+        }
+
+        /* --- ARKA PLAN YILDIZLARI --- */
+        .stars {
+            position: fixed; top:0; left:0; width:100%; height:100%; z-index:-1;
+        }
+        .star {
+            position: absolute; background: white; border-radius: 50%;
+            transition: transform 0.1s, opacity 0.1s;
         }
 
     </style>
@@ -121,177 +147,238 @@
 <body>
 
     <div class="controls" id="controls">
-        <h2>🎵 Flying Disco 🎵</h2>
-        <button onclick="connectToTab()">Start Party</button>
-        <div class="instructions">
-            1. Play music in another tab (YouTube/Spotify).<br>
-            2. Click button above.<br>
-            3. Select "Chrome Tab" -> Your Music Tab.<br>
-            4. <strong>Check "Also share tab audio".</strong>
-        </div>
+        <h2>🎧 Neon Görselleştirici 🎧</h2>
+        <p>Daha yavaş uçuş, daha fazla renk ve tepki.</p>
+        <button onclick="connectToTab()">BAŞLAT</button>
+        <br>
+        <small style="color:#aaa;">"Chrome Sekmesi" -> "Sesi Paylaş" seçmeyi unutma.</small>
     </div>
 
-    <!-- The Disco Light Center -->
-    <div class="disco-ball" id="discoLight"></div>
+    <div class="mute-control" id="muteDiv" style="display:none;">
+        <button class="btn-small" id="muteBtn" onclick="toggleMute()">Sesi Kapat (Yankı)</button>
+    </div>
 
-    <!-- BEE -->
+    <!-- EQUALIZER DUVARI -->
+    <div class="spectrum-container" id="spectrum"></div>
+
+    <!-- ARKA PLAN YILDIZLARI -->
+    <div class="stars" id="starField"></div>
+
+    <!-- ARI -->
     <div class="character-container" id="bee">
-        <div class="bee-wing L"></div>
-        <div class="bee-wing R"></div>
-        <div class="bee-body"></div>
-        <div class="bee-eye"></div>
+        <div class="bee-wing L" id="bwL"></div>
+        <div class="bee-wing R" id="bwR"></div>
+        <div class="bee-body" id="beeBody"></div>
+        <div class="bee-eye" id="beeEye"></div>
     </div>
 
-    <!-- BAT -->
+    <!-- YARASA -->
     <div class="character-container" id="bat">
         <div class="bat-ear L"></div>
         <div class="bat-ear R"></div>
-        <div class="bat-wing L"></div>
-        <div class="bat-wing R"></div>
-        <div class="bat-body"></div>
-        <div class="bat-eye L"></div>
-        <div class="bat-eye R"></div>
+        <div class="bat-wing L" id="btwL"></div>
+        <div class="bat-wing R" id="btwR"></div>
+        <div class="bat-body" id="batBody"></div>
+        <div class="bat-eye L" id="beL"></div>
+        <div class="bat-eye R" id="beR"></div>
     </div>
 
     <script>
-        // --- PHYSICS STATE ---
-        const beeState = { x: 100, y: 100, vx: 3, vy: 2 };
-        const batState = { x: window.innerWidth - 200, y: 300, vx: -3, vy: -2 };
+        // HIZ AYARLARI (Yavaşlatıldı)
+        // vx ve vy değerlerini düşürerek uçuşu sakinleştirdik.
+        const beeState = { x: 100, y: 100, vx: 1.5, vy: 1 };
+        const batState = { x: window.innerWidth - 200, y: 300, vx: -1.5, vy: -1.2 };
         
-        let audioContext;
-        let analyser;
-        let dataArray;
-        let isRunning = false;
+        let audioContext, analyser, dataArray, gainNode;
+        let isRunning = false, isMuted = false;
+        
+        // Equalizer Çubuk Sayısı
+        const BAR_COUNT = 32; 
+
+        // Başlangıçta Equalizer ve Yıldızları oluştur
+        initEnvironment();
+
+        function initEnvironment() {
+            // Çubukları oluştur
+            const spec = document.getElementById('spectrum');
+            for(let i=0; i<BAR_COUNT; i++) {
+                let bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.id = 'bar'+i;
+                spec.appendChild(bar);
+            }
+
+            // Yıldızları oluştur
+            const field = document.getElementById('starField');
+            for(let i=0; i<50; i++) {
+                let s = document.createElement('div');
+                s.className = 'star';
+                s.style.left = Math.random() * 100 + 'vw';
+                s.style.top = Math.random() * 100 + 'vh';
+                s.style.width = Math.random() * 3 + 'px';
+                s.style.height = s.style.width;
+                s.id = 'star'+i;
+                field.appendChild(s);
+            }
+        }
 
         async function connectToTab() {
             try {
-                const stream = await navigator.mediaDevices.getDisplayMedia({
-                    video: true, 
-                    audio: true
-                });
-
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
                 if (stream.getAudioTracks().length === 0) {
-                    alert("Audio not found. Please refresh and check 'Also share tab audio'.");
-                    return;
+                    alert("Ses bulunamadı! 'Sesi Paylaş' kutusunu işaretleyin."); return;
                 }
-
                 setupAudio(stream);
                 document.getElementById('controls').classList.add('hidden');
-                
-                stream.getVideoTracks()[0].onended = () => {
-                    document.getElementById('controls').classList.remove('hidden');
-                    alert("Party Stopped.");
-                    isRunning = false;
-                };
-
-            } catch (err) {
-                console.error("Error:", err);
-            }
+                document.getElementById('muteDiv').style.display = 'block';
+                stream.getVideoTracks()[0].onended = () => location.reload();
+            } catch (err) { console.error(err); }
         }
 
         function setupAudio(stream) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
+            gainNode = audioContext.createGain();
             const source = audioContext.createMediaStreamSource(stream);
+            
             source.connect(analyser);
-            source.connect(audioContext.destination); // Passthrough audio
+            analyser.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            gainNode.gain.value = 1;
 
-            analyser.fftSize = 64; // Low number for snappier reaction
-            const bufferLength = analyser.frequencyBinCount;
-            dataArray = new Uint8Array(bufferLength);
+            analyser.fftSize = 128; // Daha detaylı veri için
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
 
             isRunning = true;
             animate();
+        }
+
+        function toggleMute() {
+            if(!gainNode) return;
+            const btn = document.getElementById('muteBtn');
+            if(isMuted) {
+                gainNode.gain.value = 1; isMuted = false;
+                btn.innerText = "Sesi Kapat (Yankı)"; btn.classList.remove('active');
+            } else {
+                gainNode.gain.value = 0; isMuted = true;
+                btn.innerText = "Sesi Aç"; btn.classList.add('active');
+            }
         }
 
         function animate() {
             if (!isRunning) return;
             requestAnimationFrame(animate);
 
-            // 1. Get Audio Data
             analyser.getByteFrequencyData(dataArray);
 
-            // BASS (0-4)
-            let bass = 0;
-            for(let i=0; i<4; i++) bass += dataArray[i];
-            bass = bass / 4; // 0 to 255
+            // --- VERİ ANALİZİ ---
+            // Bass (Düşük Frekanslar)
+            let bass = 0; 
+            for(let i=0; i<5; i++) bass += dataArray[i];
+            bass = bass / 5; // 0-255
 
-            // TREBLE (10-20)
+            // Treble (Yüksek Frekanslar)
             let treble = 0;
-            for(let i=10; i<20; i++) treble += dataArray[i];
-            treble = treble / 10; // 0 to 255
+            for(let i=20; i<40; i++) treble += dataArray[i];
+            treble = treble / 20; // 0-255
 
-            // 2. Calculate Speed Multiplier (Louder = Faster)
-            const speedBoost = 1 + (bass / 150); // Speed ranges from 1x to ~2.5x
+            const now = Date.now();
 
-            // --- MOVE BEE (Controlled by Physics + Bass) ---
-            updatePhysics(beeState, speedBoost);
-            const beeEl = document.getElementById('bee');
+            // --- 1. EQUALIZER GÖRSELLİĞİ ---
+            for(let i=0; i<BAR_COUNT; i++) {
+                const val = dataArray[i];
+                const bar = document.getElementById('bar'+i);
+                // Çubuk yüksekliği
+                bar.style.height = Math.max(5, val * 1.5) + 'px';
+                // Çubuk rengi (Bass vurduğunda parlar)
+                bar.style.filter = `hue-rotate(${bass}deg)`;
+            }
+
+            // --- 2. YILDIZLARIN TİTREMESİ ---
+            // Kick vurduğunda (Bass > 200) yıldızlar büyür
+            const starScale = 1 + (bass > 180 ? 1 : 0);
+            const starOpacity = 0.3 + (treble / 400);
+            document.getElementById('starField').style.opacity = starOpacity;
+            // Bazı yıldızları rastgele parlat
+            if(bass > 150) {
+                const randomStar = document.getElementById('star' + Math.floor(Math.random()*50));
+                if(randomStar) randomStar.style.transform = `scale(${2 + Math.random() * 3})`;
+            }
+
+            // --- 3. KARAKTER ANİMASYONLARI ---
             
-            // Bee Dance: Zoom in on bass
-            const beeScale = 1 + (bass / 300);
-            // Bee Flip: Face direction of travel
-            const beeFace = beeState.vx > 0 ? 1 : -1;
+            // Kanat Hızı (Manuel Döngü)
+            // Arı Kanadı
+            const beeWingAngle = Math.sin(now / (100 - bass/3)) * 40; // Bass arttıkça hızlanır
+            document.getElementById('bwL').style.transform = `rotate(${beeWingAngle}deg)`;
+            document.getElementById('bwR').style.transform = `rotate(${-beeWingAngle}deg)`;
 
+            // Yarasa Kanadı
+            const batWingAngle = Math.sin(now / (150 - treble/2)) * 30;
+            document.getElementById('btwL').style.transform = `rotate(${10 + batWingAngle}deg)`;
+            document.getElementById('btwR').style.transform = `rotate(${-10 - batWingAngle}deg)`;
+
+            // Göz Bebeği Büyümesi (Eye Dilation)
+            const eyeSize = 14 + (bass / 30);
+            document.getElementById('beeEye').style.width = eyeSize + 'px';
+            document.getElementById('beeEye').style.height = eyeSize + 'px';
+
+
+            // --- 4. HAREKET VE RENK DEĞİŞİMİ ---
+            
+            // Arı (Bass'a tepki verir)
+            // Renk Değişimi: Normalde sarı, Bass vurduğunda Turuncu/Kırmızı
+            const beeHue = -bass / 2; // Sarıdan kırmızıya kayar
+            const beeGlow = `drop-shadow(0 0 ${bass/5}px orange) hue-rotate(${beeHue}deg)`;
+            
+            const beeEl = document.getElementById('bee');
+            updatePhysics(beeState, 1 + (bass/200)); // Hız çarpanı düşük
             beeEl.style.left = beeState.x + 'px';
             beeEl.style.top = beeState.y + 'px';
-            beeEl.style.transform = `scale(${beeScale}) scaleX(${beeFace})`;
+            // Arı Bass ile zıplar (Scale)
+            beeEl.style.transform = `scale(${1 + bass/400}) scaleX(${beeState.vx > 0 ? 1 : -1})`;
+            beeEl.style.filter = beeGlow;
 
+            // Yarasa (Treble'a tepki verir)
+            // Renk Değişimi: Normalde gri, Tizlerde Mor/Cyan
+            const batHue = treble; 
+            const batGlow = `drop-shadow(0 0 ${treble/5}px cyan) hue-rotate(${batHue}deg)`;
 
-            // --- MOVE BAT (Controlled by Physics + Treble) ---
-            updatePhysics(batState, speedBoost * 0.8); // Bat is slightly slower
             const batEl = document.getElementById('bat');
-
-            // Bat Dance: Rotate/Sway on treble
-            const batRot = (treble / 5) * Math.sin(Date.now() / 100);
-            const batScale = 1 + (treble / 400);
-
+            updatePhysics(batState, 1 + (treble/200));
             batEl.style.left = batState.x + 'px';
             batEl.style.top = batState.y + 'px';
-            batEl.style.transform = `rotate(${batRot}deg) scale(${batScale})`;
-
-            // --- BACKGROUND DISCO LIGHT ---
-            const light = document.getElementById('discoLight');
-            const colorHue = (Date.now() / 20) % 360;
-            light.style.boxShadow = `0 0 ${100 + bass*2}px ${50 + bass}px hsl(${colorHue}, 70%, 50%)`;
+            // Yarasa Tizlerde titrer
+            const shake = (treble/10) * Math.sin(now/50);
+            batEl.style.transform = `rotate(${shake}deg) scale(${1 + treble/400})`;
+            batEl.style.filter = batGlow;
         }
 
-        function updatePhysics(obj, speed) {
-            // Apply velocity with speed boost
-            obj.x += obj.vx * speed;
-            obj.y += obj.vy * speed;
+        function updatePhysics(obj, speedBoost) {
+            // Hız limiti koyuyoruz (En fazla 2 kat hızlansınlar)
+            const s = Math.min(speedBoost, 2.0);
+            
+            obj.x += obj.vx * s;
+            obj.y += obj.vy * s;
+            const pad = 120;
+            const w = window.innerWidth;
+            const h = window.innerHeight;
 
-            const padding = 100; // Keep them fully on screen
+            // Duvarlara çarpma
+            if (obj.x + pad > w) { obj.x = w - pad; obj.vx *= -1; }
+            else if (obj.x < 0) { obj.x = 0; obj.vx *= -1; }
 
-            // Wall Bounce X
-            if (obj.x + padding > window.innerWidth) {
-                obj.x = window.innerWidth - padding;
-                obj.vx *= -1;
-            } else if (obj.x < 0) {
-                obj.x = 0;
-                obj.vx *= -1;
-            }
+            if (obj.y + pad > h - 100) { obj.y = h - pad - 100; obj.vy *= -1; } // Equalizer'a çarpmasın
+            else if (obj.y < 0) { obj.y = 0; obj.vy *= -1; }
 
-            // Wall Bounce Y
-            if (obj.y + padding > window.innerHeight) {
-                obj.y = window.innerHeight - padding;
-                obj.vy *= -1;
-            } else if (obj.y < 0) {
-                obj.y = 0;
-                obj.vy *= -1;
-            }
-
-            // Randomly change direction slightly for organic flight
+            // Organik süzülme (Çok hafif rastgelelik)
             if (Math.random() < 0.02) {
-                obj.vx += (Math.random() - 0.5);
-                obj.vy += (Math.random() - 0.5);
-                
-                // Cap max natural speed so they don't go supersonic without music
-                const limit = 4;
-                if(obj.vx > limit) obj.vx = limit;
-                if(obj.vx < -limit) obj.vx = -limit;
-                if(obj.vy > limit) obj.vy = limit;
-                if(obj.vy < -limit) obj.vy = -limit;
+                obj.vx += (Math.random() - 0.5) * 0.5;
+                obj.vy += (Math.random() - 0.5) * 0.5;
+                // Maksimum hız sınırı (Çok hızlanmasınlar)
+                const maxSpeed = 3;
+                obj.vx = Math.max(-maxSpeed, Math.min(maxSpeed, obj.vx));
+                obj.vy = Math.max(-maxSpeed, Math.min(maxSpeed, obj.vy));
             }
         }
     </script>
