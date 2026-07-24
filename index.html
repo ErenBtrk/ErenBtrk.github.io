@@ -698,11 +698,22 @@ print 'It took ' + i + ' iterations to sort the deck.';</code></pre>
 		</div>
 
 		<script>
-			// Secret admin panel: Ctrl+Shift+D
+			// Secret admin panel: type 'eren' anywhere on the page
 			(function() {
+				var secret = 'eren';
+				var typed = '';
 				document.addEventListener('keydown', function(e) {
-					if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-						e.preventDefault();
+					// Ignore if user is typing in an input/textarea
+					var tag = document.activeElement.tagName.toLowerCase();
+					if (tag === 'input' || tag === 'textarea') return;
+
+					typed += e.key.toLowerCase();
+					// Keep only the last N characters
+					if (typed.length > secret.length) {
+						typed = typed.slice(-secret.length);
+					}
+					if (typed === secret) {
+						typed = '';
 						var panel = document.getElementById('admin-panel');
 						panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
 					}
